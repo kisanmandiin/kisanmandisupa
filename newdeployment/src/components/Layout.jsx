@@ -1,5 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom';
+import { Suspense } from 'react';
 import MobileBottomNav from './MobileBottomNav';
+import PageLoader from './PageLoader';
 
 export default function Layout() {
     const location = useLocation();
@@ -10,7 +12,9 @@ export default function Layout() {
 
     return (
         <>
-            <Outlet />
+            <Suspense fallback={<PageLoader />}>
+                <Outlet />
+            </Suspense>
             {!hideGlobalNav && <MobileBottomNav />}
         </>
     );
