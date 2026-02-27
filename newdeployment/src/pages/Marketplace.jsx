@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -144,6 +144,11 @@ export default function Marketplace() {
         setFilteredProducts(filtered);
     }, [search, category, sort, allProducts]);
 
+    // Optimized: Memoized handler to prevent ProductCard re-renders
+    const handleQuery = useCallback((p) => {
+        navigate('/enquiry', { state: { product: p } });
+    }, [navigate]);
+
     return (
         <div className="bg-farm-earth min-h-screen text-slate-900 font-sans grainy-overlay">
             <Navbar onSearch={setSearch} />
@@ -216,7 +221,7 @@ export default function Marketplace() {
                                 </div>
                             ) : (
                                 filteredProducts.slice(0, visibleCount).map(p => (
-                                    <ProductCard key={p.id} product={p} onQuery={(p) => navigate('/enquiry', { state: { product: p } })} />
+                                    <ProductCard key={p.id} product={p} onQuery={handleQuery} />
                                 ))
                             )}
                         </div>
