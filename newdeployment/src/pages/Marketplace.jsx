@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -23,29 +23,35 @@ export default function Marketplace() {
     const category = searchParams.get('category') || "All Produce";
     const sort = searchParams.get('sort') || "relevance";
 
-    const setSearch = (val) => {
+    // ⚡ Bolt Optimization: Use useCallback for handler functions passed to memoized children (CategoryRow, ProductCard)
+    // to guarantee prop stability and avoid triggering extra renders on those children.
+    const setSearch = useCallback((val) => {
         setSearchParams(prev => {
             const newParams = new URLSearchParams(prev);
             if (val) newParams.set('search', val); else newParams.delete('search');
             return newParams;
         });
-    };
+    }, [setSearchParams]);
 
-    const setCategory = (val) => {
+    const setCategory = useCallback((val) => {
         setSearchParams(prev => {
             const newParams = new URLSearchParams(prev);
             if (val) newParams.set('category', val); else newParams.delete('category');
             return newParams;
         });
-    };
+    }, [setSearchParams]);
 
-    const setSort = (val) => {
+    const setSort = useCallback((val) => {
         setSearchParams(prev => {
             const newParams = new URLSearchParams(prev);
             if (val) newParams.set('sort', val); else newParams.delete('sort');
             return newParams;
         });
-    };
+    }, [setSearchParams]);
+
+    const handleQuery = useCallback((p) => {
+        navigate('/enquiry', { state: { product: p } });
+    }, [navigate]);
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -216,7 +222,7 @@ export default function Marketplace() {
                                 </div>
                             ) : (
                                 filteredProducts.slice(0, visibleCount).map(p => (
-                                    <ProductCard key={p.id} product={p} onQuery={(p) => navigate('/enquiry', { state: { product: p } })} />
+                                    <ProductCard key={p.id} product={p} onQuery={handleQuery} />
                                 ))
                             )}
                         </div>

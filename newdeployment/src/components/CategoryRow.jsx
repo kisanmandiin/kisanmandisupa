@@ -1,19 +1,21 @@
 import React from 'react';
 
-export default function CategoryRow({ selectedCategory, onSelectCategory }) {
-    const categories = [
-        { name: "All", icon: "/assets/categories/all.png", id: "All Produce" },
-        { name: "Plants", icon: "/assets/categories/plants.png", id: "Plants" },
-        { name: "Seeds", icon: "/assets/categories/seeds.png", id: "Seeds" },
-        { name: "Grains", icon: "/assets/categories/grains.png", id: "Grains" },
-        { name: "Dairy", icon: "/assets/categories/dairy.png", id: "Dairy" },
-        { name: "Fruits", icon: "/assets/categories/fruits.png", id: "Fruits" },
-        { name: "Vegetables", icon: "/assets/categories/vegetables.png", id: "Vegetables" },
-        { name: "Others", icon: "/assets/categories/others.png", id: "Others" },
-        { name: "Pesticides", icon: "/assets/categories/pesticides.png", id: "Pesticides" },
-        { name: "Manure", icon: "/assets/categories/manure.png", id: "Manure" }
-    ];
+// Static array moved outside component to prevent recreation on every render
+const categories = [
+    { name: "All", icon: "/assets/categories/all.png", id: "All Produce" },
+    { name: "Plants", icon: "/assets/categories/plants.png", id: "Plants" },
+    { name: "Seeds", icon: "/assets/categories/seeds.png", id: "Seeds" },
+    { name: "Grains", icon: "/assets/categories/grains.png", id: "Grains" },
+    { name: "Dairy", icon: "/assets/categories/dairy.png", id: "Dairy" },
+    { name: "Fruits", icon: "/assets/categories/fruits.png", id: "Fruits" },
+    { name: "Vegetables", icon: "/assets/categories/vegetables.png", id: "Vegetables" },
+    { name: "Others", icon: "/assets/categories/others.png", id: "Others" },
+    { name: "Pesticides", icon: "/assets/categories/pesticides.png", id: "Pesticides" },
+    { name: "Manure", icon: "/assets/categories/manure.png", id: "Manure" }
+];
 
+// ⚡ Bolt Optimization: Wrapped CategoryRow with React.memo to prevent re-renders unless category props change.
+const CategoryRow = React.memo(function CategoryRow({ selectedCategory, onSelectCategory }) {
     return (
         <div className="w-full px-2 md:px-0">
             <div className="max-w-6xl mx-auto grid grid-cols-5 md:grid-cols-10 gap-3 md:gap-4 md:px-6">
@@ -45,4 +47,6 @@ export default function CategoryRow({ selectedCategory, onSelectCategory }) {
             </div>
         </div>
     );
-}
+});
+
+export default CategoryRow;
