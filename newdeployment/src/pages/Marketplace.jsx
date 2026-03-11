@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -12,7 +12,6 @@ export default function Marketplace() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [allProducts, setAllProducts] = useState([]);
-    const [filteredProducts, setFilteredProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // State
@@ -56,7 +55,6 @@ export default function Marketplace() {
                     const { data, timestamp } = JSON.parse(cachedData);
                     if (Date.now() - timestamp < 3600000) {
                         setAllProducts(data);
-                        setFilteredProducts(data);
                         setLoading(false);
                     }
                 } catch (e) {
@@ -104,7 +102,6 @@ export default function Marketplace() {
 
                     // Update State
                     setAllProducts(mergedProducts);
-                    setFilteredProducts(mergedProducts);
 
                     // Update Cache
                     localStorage.setItem('kisan_products_cache', JSON.stringify({
@@ -113,7 +110,6 @@ export default function Marketplace() {
                     }));
                 } else {
                     setAllProducts([]);
-                    setFilteredProducts([]);
                 }
             } catch (err) {
                 console.error("Failed to load products from Supabase", err);
@@ -124,7 +120,13 @@ export default function Marketplace() {
         fetchProducts();
     }, []);
 
-    useEffect(() => {
+    /*
+     * ⚡ Bolt Performance Optimization:
+     * Derived `filteredProducts` using `useMemo` instead of `useEffect` + `useState`.
+     * Why: Prevents an unnecessary double-render cycle whenever filters or `allProducts` change.
+     * Impact: Reduces React render passes by ~50% during search/filter operations, making the UI feel more responsive.
+     */
+    const filteredProducts = useMemo(() => {
         let filtered = [...allProducts];
         if (category !== "All Produce") {
             filtered = filtered.filter(p => p.category === category);
@@ -141,7 +143,7 @@ export default function Marketplace() {
         } else if (sort === 'price_desc') {
             filtered.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
         }
-        setFilteredProducts(filtered);
+        return filtered;
     }, [search, category, sort, allProducts]);
 
     return (
