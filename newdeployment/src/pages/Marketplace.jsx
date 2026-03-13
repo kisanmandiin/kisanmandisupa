@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -12,7 +12,6 @@ export default function Marketplace() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [allProducts, setAllProducts] = useState([]);
-    const [filteredProducts, setFilteredProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // State
@@ -23,29 +22,46 @@ export default function Marketplace() {
     const category = searchParams.get('category') || "All Produce";
     const sort = searchParams.get('sort') || "relevance";
 
-    const setSearch = (val) => {
+    const setSearch = useCallback((val) => {
         setSearchParams(prev => {
             const newParams = new URLSearchParams(prev);
             if (val) newParams.set('search', val); else newParams.delete('search');
             return newParams;
         });
-    };
+    }, [setSearchParams]);
 
-    const setCategory = (val) => {
+    const setCategory = useCallback((val) => {
         setSearchParams(prev => {
             const newParams = new URLSearchParams(prev);
             if (val) newParams.set('category', val); else newParams.delete('category');
             return newParams;
         });
-    };
+    }, [setSearchParams]);
 
-    const setSort = (val) => {
+    const setSort = useCallback((val) => {
         setSearchParams(prev => {
             const newParams = new URLSearchParams(prev);
             if (val) newParams.set('sort', val); else newParams.delete('sort');
             return newParams;
         });
-    };
+    }, [setSearchParams]);
+
+    const handleSortChange = useCallback((e) => {
+        setSort(e.target.value);
+    }, [setSort]);
+
+    const handleQuery = useCallback((p) => {
+        navigate('/enquiry', { state: { product: p } });
+    }, [navigate]);
+
+    const handleLoadMore = useCallback(() => {
+        setVisibleCount(prev => prev + 8);
+    }, []);
+
+    const handleClearFilters = useCallback(() => {
+        setCategory("All Produce");
+        setSearch("");
+    }, [setCategory, setSearch]);
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -56,7 +72,6 @@ export default function Marketplace() {
                     const { data, timestamp } = JSON.parse(cachedData);
                     if (Date.now() - timestamp < 3600000) {
                         setAllProducts(data);
-                        setFilteredProducts(data);
                         setLoading(false);
                     }
                 } catch (e) {
@@ -104,7 +119,6 @@ export default function Marketplace() {
 
                     // Update State
                     setAllProducts(mergedProducts);
-                    setFilteredProducts(mergedProducts);
 
                     // Update Cache
                     localStorage.setItem('kisan_products_cache', JSON.stringify({
@@ -113,7 +127,6 @@ export default function Marketplace() {
                     }));
                 } else {
                     setAllProducts([]);
-                    setFilteredProducts([]);
                 }
             } catch (err) {
                 console.error("Failed to load products from Supabase", err);
@@ -124,7 +137,7 @@ export default function Marketplace() {
         fetchProducts();
     }, []);
 
-    useEffect(() => {
+    const filteredProducts = useMemo(() => {
         let filtered = [...allProducts];
         if (category !== "All Produce") {
             filtered = filtered.filter(p => p.category === category);
@@ -141,7 +154,7 @@ export default function Marketplace() {
         } else if (sort === 'price_desc') {
             filtered.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
         }
-        setFilteredProducts(filtered);
+        return filtered;
     }, [search, category, sort, allProducts]);
 
     return (
@@ -184,7 +197,7 @@ export default function Marketplace() {
                                         </svg>
                                     </button>
                                     <select
-                                        onChange={(e) => setSort(e.target.value)}
+                                        onChange={handleSortChange}
                                         className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
                                         value={sort}
                                     >
@@ -212,11 +225,11 @@ export default function Marketplace() {
                                         <svg className="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                                     </div>
                                     <h3 className="text-xl font-bold text-slate-900 mb-2">No Harvest Found</h3>
-                                    <button onClick={() => { setCategory("All Produce"); setSearch(""); }} className="bg-[#15803d] text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg mt-4">Clear All Filters</button>
+                                    <button onClick={handleClearFilters} className="bg-[#15803d] text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg mt-4">Clear All Filters</button>
                                 </div>
                             ) : (
                                 filteredProducts.slice(0, visibleCount).map(p => (
-                                    <ProductCard key={p.id} product={p} onQuery={(p) => navigate('/enquiry', { state: { product: p } })} />
+                                    <ProductCard key={p.id} product={p} onQuery={handleQuery} />
                                 ))
                             )}
                         </div>
@@ -224,7 +237,7 @@ export default function Marketplace() {
                         {!loading && visibleCount < filteredProducts.length && (
                             <div className="flex justify-center pb-12 px-4">
                                 <button
-                                    onClick={() => setVisibleCount(prev => prev + 8)}
+                                    onClick={handleLoadMore}
                                     className="w-full py-4 rounded-2xl bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-[0.25em] hover:bg-slate-100 hover:text-emerald-700 transition-all active:scale-95 border border-slate-100"
                                 >
                                     Load More Harvest
