@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -12,7 +12,6 @@ export default function Marketplace() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [allProducts, setAllProducts] = useState([]);
-    const [filteredProducts, setFilteredProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // State
@@ -23,29 +22,33 @@ export default function Marketplace() {
     const category = searchParams.get('category') || "All Produce";
     const sort = searchParams.get('sort') || "relevance";
 
-    const setSearch = (val) => {
+    const setSearch = useCallback((val) => {
         setSearchParams(prev => {
             const newParams = new URLSearchParams(prev);
             if (val) newParams.set('search', val); else newParams.delete('search');
             return newParams;
         });
-    };
+    }, [setSearchParams]);
 
-    const setCategory = (val) => {
+    const setCategory = useCallback((val) => {
         setSearchParams(prev => {
             const newParams = new URLSearchParams(prev);
             if (val) newParams.set('category', val); else newParams.delete('category');
             return newParams;
         });
-    };
+    }, [setSearchParams]);
 
-    const setSort = (val) => {
+    const setSort = useCallback((val) => {
         setSearchParams(prev => {
             const newParams = new URLSearchParams(prev);
             if (val) newParams.set('sort', val); else newParams.delete('sort');
             return newParams;
         });
-    };
+    }, [setSearchParams]);
+
+    const handleQuery = useCallback((p) => {
+        navigate('/enquiry', { state: { product: p } });
+    }, [navigate]);
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -56,7 +59,6 @@ export default function Marketplace() {
                     const { data, timestamp } = JSON.parse(cachedData);
                     if (Date.now() - timestamp < 3600000) {
                         setAllProducts(data);
-                        setFilteredProducts(data);
                         setLoading(false);
                     }
                 } catch (e) {
@@ -104,7 +106,6 @@ export default function Marketplace() {
 
                     // Update State
                     setAllProducts(mergedProducts);
-                    setFilteredProducts(mergedProducts);
 
                     // Update Cache
                     localStorage.setItem('kisan_products_cache', JSON.stringify({
@@ -113,7 +114,6 @@ export default function Marketplace() {
                     }));
                 } else {
                     setAllProducts([]);
-                    setFilteredProducts([]);
                 }
             } catch (err) {
                 console.error("Failed to load products from Supabase", err);
@@ -124,7 +124,7 @@ export default function Marketplace() {
         fetchProducts();
     }, []);
 
-    useEffect(() => {
+    const filteredProducts = useMemo(() => {
         let filtered = [...allProducts];
         if (category !== "All Produce") {
             filtered = filtered.filter(p => p.category === category);
@@ -141,7 +141,7 @@ export default function Marketplace() {
         } else if (sort === 'price_desc') {
             filtered.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
         }
-        setFilteredProducts(filtered);
+        return filtered;
     }, [search, category, sort, allProducts]);
 
     return (
@@ -216,7 +216,7 @@ export default function Marketplace() {
                                 </div>
                             ) : (
                                 filteredProducts.slice(0, visibleCount).map(p => (
-                                    <ProductCard key={p.id} product={p} onQuery={(p) => navigate('/enquiry', { state: { product: p } })} />
+                                    <ProductCard key={p.id} product={p} onQuery={handleQuery} />
                                 ))
                             )}
                         </div>

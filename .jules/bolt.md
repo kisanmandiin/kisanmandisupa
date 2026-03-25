@@ -1,0 +1,4 @@
+
+## 2024-05-24 - [Avoid Double Renders on Filter/Sort in Large Lists]
+**Learning:** Using `useState` and `useEffect` to manage derived state (like `filteredProducts` from `allProducts`, search strings, and categories) causes an unnecessary double render cycle each time the dependencies change. This can be notably slow in views like the `Marketplace` with large datasets because the DOM is updated twice.
+**Action:** Replace `useState` updated via `useEffect` with `useMemo` for any derived values during render. This calculates the filtered array before rendering the tree, saving a full render pass. Also pair this with `useCallback` for event handlers so that `React.memo` wrapped list items (`ProductCard`, `CategoryRow`) are not re-rendered needlessly when parent state like `visibleCount` changes.

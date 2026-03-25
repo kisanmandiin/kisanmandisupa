@@ -1,16 +1,17 @@
 import React from 'react';
 
-export default function ProductCard({ product, onQuery }) {
-    const timeAgo = (timestamp) => {
-        if (!timestamp) return 'Recently';
-        const diff = Date.now() - new Date(timestamp).getTime();
-        const mins = Math.floor(diff / 60000);
-        if (mins < 60) return `${mins}m ago`;
-        const hours = Math.floor(mins / 60);
-        if (hours < 24) return `${hours}h ago`;
-        return `${Math.floor(hours / 24)}d ago`;
-    };
+// Helper function moved outside to prevent recreation on every render
+const timeAgo = (timestamp) => {
+    if (!timestamp) return 'Recently';
+    const diff = Date.now() - new Date(timestamp).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+};
 
+const ProductCard = React.memo(function ProductCard({ product, onQuery }) {
     const images = product.images || (product.image ? [product.image] : ['/assets/placeholder.jpg']);
 
     return (
@@ -93,4 +94,6 @@ export default function ProductCard({ product, onQuery }) {
             </div>
         </div>
     );
-}
+});
+
+export default ProductCard;
