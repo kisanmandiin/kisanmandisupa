@@ -1,0 +1,3 @@
+## 2024-05-18 - Avoid useEffect for Derived State in React Components
+**Learning:** Found a performance bottleneck in `Marketplace.jsx` where filtering/sorting logic was implemented using `useState` and updated via `useEffect`. This anti-pattern causes an extra render cycle every time filter parameters change, resulting in degraded responsiveness for large lists of data.
+**Action:** Always use `useMemo` to derive state synchronously during the render cycle when filtering, sorting, or mapping large arrays based on props or other state variables. This eliminates the redundant render and improves application speed.
