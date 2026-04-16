@@ -1,0 +1,3 @@
+## 2025-02-12 - Marketplace State Optimization
+**Learning:** Found an anti-pattern in `Marketplace.jsx` where `filteredProducts` was maintained in state (`useState`) and updated via a `useEffect` that depended on `allProducts` and filter criteria. This forces a double render: one when the data/filters change, and another when the effect completes. In a long list of products, this re-render cycle is unnecessary.
+**Action:** Always prefer computing derived state directly during render using `useMemo` over synchronizing state via `useEffect`. This prevents the extra render cycle and simplifies state management.
