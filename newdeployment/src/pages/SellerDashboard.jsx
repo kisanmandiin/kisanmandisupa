@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/Navbar';
 import AddProductForm from '../components/dashboard/AddProductForm';
@@ -41,15 +41,20 @@ export default function SellerDashboard() {
         );
     }
 
-    const handleEditProduct = (product) => {
+    const handleEditProduct = useCallback((product) => {
         setEditingProduct(product);
         setCurrentSection('add');
-    };
+    }, []);
 
-    const handleProductAdded = () => {
+    const handleProductAdded = useCallback(() => {
         setEditingProduct(null);
         setCurrentSection('products');
-    };
+    }, []);
+
+    const handleAddNew = useCallback(() => {
+        setCurrentSection('add');
+        setEditingProduct(null);
+    }, []);
 
     return (
         <div className="organic-texture bg-[#FCFAF7] min-h-screen font-sans text-slate-900">
@@ -66,7 +71,7 @@ export default function SellerDashboard() {
                         <span>Products</span>
                     </button>
                     <button
-                        onClick={() => { setCurrentSection('add'); setEditingProduct(null); }}
+                        onClick={handleAddNew}
                         className={`flex flex-col items-center justify-center py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${currentSection === 'add' ? 'bg-[#15803d] text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
                     >
                         <span>➕</span>
@@ -100,7 +105,7 @@ export default function SellerDashboard() {
                                     <span className="text-lg">📦</span>
                                     <span>My Products</span>
                                 </button>
-                                <button onClick={() => { setCurrentSection('add'); setEditingProduct(null); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-bold ${currentSection === 'add' ? 'bg-[#15803d]/10 text-[#15803d] shadow-sm ring-1 ring-[#15803d]/20' : 'text-slate-600 hover:bg-slate-50'}`}>
+                                <button onClick={handleAddNew} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-bold ${currentSection === 'add' ? 'bg-[#15803d]/10 text-[#15803d] shadow-sm ring-1 ring-[#15803d]/20' : 'text-slate-600 hover:bg-slate-50'}`}>
                                     <span className="text-lg">➕</span>
                                     <span>Add Harvest</span>
                                 </button>
@@ -136,7 +141,7 @@ export default function SellerDashboard() {
                         </div>
 
                         {currentSection === 'products' && (
-                            <SellerProducts onEdit={handleEditProduct} onAddNew={() => { setCurrentSection('add'); setEditingProduct(null); }} />
+                            <SellerProducts onEdit={handleEditProduct} onAddNew={handleAddNew} />
                         )}
 
                         {currentSection === 'add' && (

@@ -1,0 +1,1 @@
+## 2026-04-19 - Component Memoization Learning\n**Learning:** The SellerProducts component re-renders unnecessarily because it lacks React.memo and handles unstable callback references from the parent.\n**Action:** Use React.memo on child components and wrap callbacks in the parent with useCallback to prevent cascade re-renders.
