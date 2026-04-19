@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 
-export default function SellerProducts({ onEdit, onAddNew }) {
+const SellerProducts = memo(function SellerProducts({ onEdit, onAddNew }) {
     const { user } = useAuth();
     const [products, setProducts] = useState({});
     const [loading, setLoading] = useState(true);
@@ -87,7 +87,7 @@ export default function SellerProducts({ onEdit, onAddNew }) {
 
     if (loading) return <div className="text-center py-12 text-gray-400">Loading your products...</div>;
 
-    const productKeys = Object.keys(products);
+    const productKeys = useMemo(() => Object.keys(products), [products]);
 
     return (
         <div className="dashboard-section">
@@ -151,4 +151,6 @@ export default function SellerProducts({ onEdit, onAddNew }) {
             </div>
         </div>
     );
-}
+});
+
+export default SellerProducts;
