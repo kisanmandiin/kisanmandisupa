@@ -3,54 +3,92 @@ import { supabase } from '../lib/supabase';
 import ProductCard from './ProductCard'; // Reusing the card for consistent look
 import QueryModal from './QueryModal'; // Reuse modal for actions
 
+// Module-level cache to store search results for the session
+const searchCache = {};
+
 export default function SearchOverlay({ onClose, isOpen }) {
     const [searchTerm, setSearchTerm] = useState("");
-    const [allProducts, setAllProducts] = useState([]);
+    const [debouncedTerm, setDebouncedTerm] = useState("");
     const [filteredProducts, setFilteredProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [visibleCount, setVisibleCount] = useState(10); // Start with 10 items
     const inputRef = useRef(null);
 
-    // Fetch products on mount if open
+    // Clear instantly if empty, otherwise debounce
     useEffect(() => {
-        if (isOpen && allProducts.length === 0) {
-            const fetchProducts = async () => {
-                try {
-                    const { data, error } = await supabase
-                        .from('products')
-                        .select('*')
-                        .order('created_at', { ascending: false });
+        if (!isOpen) return;
 
-                    if (error) throw error;
-
-                    if (data) {
-                        setAllProducts(data);
-                    }
-                } catch (err) {
-                    console.error("Search fetch error", err);
-                } finally {
-                    setLoading(false);
-                }
-            };
-            fetchProducts();
-        }
-    }, [isOpen]);
-
-    // Live Filter
-    useEffect(() => {
         if (!searchTerm) {
+            setDebouncedTerm("");
             setFilteredProducts([]);
+            setLoading(false);
             return;
         }
-        const lower = searchTerm.toLowerCase();
-        const results = allProducts.filter(p =>
-            p.name.toLowerCase().includes(lower) ||
-            (p.category || "").toLowerCase().includes(lower) ||
-            (p.description || "").toLowerCase().includes(lower)
-        );
-        setFilteredProducts(results);
-    }, [searchTerm, allProducts]);
+
+        setLoading(true);
+
+        const timer = setTimeout(() => {
+            setDebouncedTerm(searchTerm);
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [searchTerm, isOpen]);
+
+    // Fetch matching products from server
+    useEffect(() => {
+        if (!isOpen || !debouncedTerm) return;
+
+        // Prevent injection of double quotes by removing them from the term
+        const lowerTerm = debouncedTerm.toLowerCase().replace(/"/g, '');
+
+        // If after removing quotes it's empty, do nothing
+        if (!lowerTerm) {
+            setLoading(false);
+            return;
+        }
+
+        // Check cache first
+        if (searchCache[lowerTerm]) {
+            setFilteredProducts(searchCache[lowerTerm]);
+            setLoading(false); // Reset loading state when using cache
+            return;
+        }
+
+        let isMounted = true;
+
+        const fetchSearchResults = async () => {
+            try {
+                // Escape terms in double quotes to prevent Postgres parsing errors if the user types a comma
+                // Reference: PostgREST Syntax
+                const queryStr = `name.ilike."%${lowerTerm}%",category.ilike."%${lowerTerm}%",description.ilike."%${lowerTerm}%"`;
+                const { data, error } = await supabase
+                    .from('products')
+                    .select('*')
+                    .or(queryStr)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (isMounted && data) {
+                    searchCache[lowerTerm] = data; // Cache the results
+                    setFilteredProducts(data);
+                }
+            } catch (err) {
+                console.error("Search fetch error", err);
+            } finally {
+                if (isMounted) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        fetchSearchResults();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [debouncedTerm, isOpen]); // REMOVED searchTerm to avoid breaking the debounce and API spam
 
     // Auto-focus logic
     useEffect(() => {
