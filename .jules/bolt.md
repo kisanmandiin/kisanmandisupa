@@ -1,0 +1,3 @@
+## 2026-04-25 - Optimize Supabase real-time subscriptions with Postgres Changes Filters
+**Learning:** This codebase previously suffered from N+1 query fetching in real-time subscriptions because global listeners were attached to tables (e.g., `queries`) without any row-level filters. This means every active client would fetch data simultaneously anytime a row was added or updated by any user system-wide.
+**Action:** When adding real-time listeners for user-specific data, always utilize the `filter` option in the `postgres_changes` configuration (e.g., `filter: farmer_uid=eq.${user.id}`) to push the filtering down to the database level and prevent massive redundant component re-renders.
