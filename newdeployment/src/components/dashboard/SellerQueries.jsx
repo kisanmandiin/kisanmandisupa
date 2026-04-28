@@ -36,11 +36,15 @@ export default function SellerQueries() {
 
         fetchQueries();
 
-        // Real-time updates
+        // ⚡ Bolt Performance Optimization:
+        // Added database-level `postgres_changes` filter to the real-time subscription based on active tab.
+        // This prevents the component from being notified (and refetching) for unrelated query updates,
+        // avoiding an inefficient global N+1 refetch bottleneck as the platform scales.
+        const filterStr = activeTab === 'received' ? `farmer_uid=eq.${user.id}` : `buyer_uid=eq.${user.id}`;
+
         const subscription = supabase
             .channel('public:queries')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'queries' }, (payload) => {
-                // Ideally filter here or just refetch. Refetching for simplicity.
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'queries', filter: filterStr }, (payload) => {
                 fetchQueries();
             })
             .subscribe();
