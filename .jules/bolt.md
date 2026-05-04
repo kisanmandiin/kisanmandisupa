@@ -1,0 +1,4 @@
+
+## 2024-05-18 - Replacing `useEffect` with `useMemo` for derived filtering state
+**Learning:** Using `useEffect` to derive filtered arrays (e.g. `filteredProducts`) from source state (`allProducts`) triggers a full double-render cycle whenever filter constraints (like search string) change, causing UI lag during typing. In `Marketplace.jsx` and `SearchOverlay.jsx`, updating `filteredProducts` unconditionally inside a `useEffect` forced an extra render on top of the initial render triggered by `setSearchTerm`. Also, cloning arrays with `[...array]` prior to a filter/sort without needing to mutate the original array causes unnecessary memory allocation on every render.
+**Action:** Always compute derived state synchronously during render with `useMemo` to eliminate double-render cycles. Delay shallow cloning operations (`[...array]`) until absolutely necessary for a mutating operation like `Array.prototype.sort()`.
