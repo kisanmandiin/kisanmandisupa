@@ -7,12 +7,13 @@ import Sidebar from '../components/Sidebar';
 import CategoryRow from '../components/CategoryRow';
 import ProductCard from '../components/ProductCard';
 
+import { useMemo } from 'react';
+
 export default function Marketplace() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [allProducts, setAllProducts] = useState([]);
-    const [filteredProducts, setFilteredProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // State
@@ -56,7 +57,6 @@ export default function Marketplace() {
                     const { data, timestamp } = JSON.parse(cachedData);
                     if (Date.now() - timestamp < 3600000) {
                         setAllProducts(data);
-                        setFilteredProducts(data);
                         setLoading(false);
                     }
                 } catch (e) {
@@ -104,7 +104,6 @@ export default function Marketplace() {
 
                     // Update State
                     setAllProducts(mergedProducts);
-                    setFilteredProducts(mergedProducts);
 
                     // Update Cache
                     localStorage.setItem('kisan_products_cache', JSON.stringify({
@@ -113,7 +112,6 @@ export default function Marketplace() {
                     }));
                 } else {
                     setAllProducts([]);
-                    setFilteredProducts([]);
                 }
             } catch (err) {
                 console.error("Failed to load products from Supabase", err);
@@ -124,11 +122,15 @@ export default function Marketplace() {
         fetchProducts();
     }, []);
 
-    useEffect(() => {
-        let filtered = [...allProducts];
+    // ⚡ Bolt Optimization: Use useMemo for derived state to avoid double-rendering
+    // Delay array cloning until sort is needed to prevent unnecessary memory allocations
+    const filteredProducts = useMemo(() => {
+        let filtered = allProducts;
+
         if (category !== "All Produce") {
             filtered = filtered.filter(p => p.category === category);
         }
+
         if (search) {
             const lowerSearch = search.toLowerCase();
             filtered = filtered.filter(p =>
@@ -136,12 +138,15 @@ export default function Marketplace() {
                 (p.description || "").toLowerCase().includes(lowerSearch)
             );
         }
+
+        // Only clone the array if we actually need to sort it
         if (sort === 'price_asc') {
-            filtered.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+            return [...filtered].sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
         } else if (sort === 'price_desc') {
-            filtered.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+            return [...filtered].sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
         }
-        setFilteredProducts(filtered);
+
+        return filtered;
     }, [search, category, sort, allProducts]);
 
     return (
