@@ -1,4 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
+import { Suspense } from 'react';
 import MobileBottomNav from './MobileBottomNav';
 
 export default function Layout() {
@@ -10,7 +11,14 @@ export default function Layout() {
 
     return (
         <>
-            <Outlet />
+            {/* ⚡ Bolt: Added Suspense boundary to support lazy-loaded routes */}
+            <Suspense fallback={
+                <div className="flex h-screen w-full items-center justify-center">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent"></div>
+                </div>
+            }>
+                <Outlet />
+            </Suspense>
             {!hideGlobalNav && <MobileBottomNav />}
         </>
     );
