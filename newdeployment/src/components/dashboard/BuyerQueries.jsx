@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 
@@ -63,9 +63,21 @@ export default function BuyerQueries() {
         }
     };
 
-    const filteredQueries = queries
-        .filter(q => filterStatus === 'all' || (q.status || 'pending') === filterStatus)
-        .sort((a, b) => sortDate === 'newest' ? new Date(b.created_at) - new Date(a.created_at) : new Date(a.created_at) - new Date(b.created_at));
+    const filteredQueries = useMemo(() => {
+        // If filter is active, .filter() creates a new array we can safely sort in place.
+        // If no filter, we must clone the original array before sorting.
+        let arrayToSort = filterStatus !== 'all'
+            ? queries.filter(q => (q.status || 'pending') === filterStatus)
+            : [...queries];
+
+        return arrayToSort.sort((a, b) => {
+            if (sortDate === 'newest') {
+                return a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0;
+            } else {
+                return a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0;
+            }
+        });
+    }, [queries, filterStatus, sortDate]);
 
     return (
         <div className="dashboard-section animate-in fade-in slide-in-from-bottom-4 duration-500">
