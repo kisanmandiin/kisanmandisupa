@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import ProductCard from './ProductCard'; // Reusing the card for consistent look
 import QueryModal from './QueryModal'; // Reuse modal for actions
@@ -6,7 +6,6 @@ import QueryModal from './QueryModal'; // Reuse modal for actions
 export default function SearchOverlay({ onClose, isOpen }) {
     const [searchTerm, setSearchTerm] = useState("");
     const [allProducts, setAllProducts] = useState([]);
-    const [filteredProducts, setFilteredProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [visibleCount, setVisibleCount] = useState(10); // Start with 10 items
@@ -38,18 +37,14 @@ export default function SearchOverlay({ onClose, isOpen }) {
     }, [isOpen]);
 
     // Live Filter
-    useEffect(() => {
-        if (!searchTerm) {
-            setFilteredProducts([]);
-            return;
-        }
+    const filteredProducts = useMemo(() => {
+        if (!searchTerm) return [];
         const lower = searchTerm.toLowerCase();
-        const results = allProducts.filter(p =>
+        return allProducts.filter(p =>
             p.name.toLowerCase().includes(lower) ||
             (p.category || "").toLowerCase().includes(lower) ||
             (p.description || "").toLowerCase().includes(lower)
         );
-        setFilteredProducts(results);
     }, [searchTerm, allProducts]);
 
     // Auto-focus logic
