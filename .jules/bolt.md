@@ -1,0 +1,3 @@
+## 2024-06-07 - Real-time Broadcast Storms on Global Tables
+**Learning:** The previous real-time subscription in `SellerQueries` (`channel('public:queries').on('postgres_changes', { event: '*', schema: 'public', table: 'queries' })`) caused every client to refetch when *any* user updated a query anywhere on the platform. This happens because Supabase subscriptions default to global scope for the entire table unless explicitly filtered.
+**Action:** Always append database-level `.eq()` equivalent filters (`filter: column=eq.[value]`) to `postgres_changes` configurations for user-specific data tables to prevent global broadcast storms and N+1 API refetches on the client side.
