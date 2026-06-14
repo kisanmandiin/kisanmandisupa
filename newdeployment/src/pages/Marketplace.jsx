@@ -64,40 +64,28 @@ export default function Marketplace() {
                 }
             }
 
-            // 2. Fetch fresh data from Supabase
+            // 2. Fetch fresh data from Supabase using consolidated join query to prevent N+1 bottleneck
             try {
-                // Fetch products
+                // Fetch products with seller data joined
                 const { data: productsData, error: productsError } = await supabase
                     .from('products')
-                    .select('*')
+                    .select('*, seller:users!seller_uid(id, name, city, state, profileImage)')
                     .order('created_at', { ascending: false });
 
                 if (productsError) throw productsError;
 
                 if (productsData && productsData.length > 0) {
-                    // Manual Join for User Data (to ensure fresh images/names)
-                    const sellerIds = [...new Set(productsData.map(p => p.seller_uid))];
-
-                    const { data: usersData, error: usersError } = await supabase
-                        .from('users')
-                        .select('id, name, city, state, profileImage')
-                        .in('id', sellerIds);
-
-                    if (usersError) console.error("Error fetching sellers:", usersError);
-
-                    const usersMap = {};
-                    if (usersData) {
-                        usersData.forEach(u => {
-                            usersMap[u.id] = u;
-                        });
-                    }
-
+                    // Map the joined data correctly
                     const mergedProducts = productsData.map(p => {
-                        const seller = usersMap[p.seller_uid];
+                        const seller = Array.isArray(p.seller) ? p.seller[0] : p.seller; // Handle potential array return
+
+                        // Create a clean object without the joined seller object to maintain structure
+                        const { seller: _, ...productData } = p;
+
                         return {
-                            ...p,
+                            ...productData,
                             seller_name: seller?.name || p.seller_name || "Farmer",
-                            seller_loc: (seller?.city ? seller.city + (seller.state ? ', ' + seller.state : '') : null) || p.seller_loc || "India",
+                            seller_loc: (seller?.city ? seller.city + (seller?.state ? ', ' + seller.state : '') : null) || p.seller_loc || "India",
                             seller_image: seller?.profileImage || p.seller_image || '/assets/farmer_avatar_new.png'
                         };
                     });
