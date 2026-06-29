@@ -1,0 +1,3 @@
+## 2024-06-29 - Client-side Filtering State vs Derived State
+**Learning:** In React components like `Marketplace`, maintaining a separate `useState` for filtered results that depends on other states (`search`, `category`, `allProducts`) and updating it via `useEffect` introduces an unavoidable double-render cycle. Additionally, blindly copying arrays (e.g., `let filtered = [...allProducts]`) at the start of a sorting/filtering pipeline wastes memory, as methods like `.filter()` already return a new array instance.
+**Action:** Use `useMemo` to synchronously compute derived state during render. Defer array cloning `[...array]` until directly preceding a mutating method (like `.sort()`), and only if the array hasn't already been cloned by a preceding `.filter()` step.
