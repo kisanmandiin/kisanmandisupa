@@ -1,0 +1,4 @@
+node_modules/
+dist/
+newdeployment/node_modules/
+newdeployment/dist/
