@@ -37,10 +37,18 @@ export default function SellerQueries() {
         fetchQueries();
 
         // Real-time updates
+        const roleColumn = activeTab === 'received' ? 'farmer_uid' : 'buyer_uid';
+        const channelName = `public:queries:${user.id}:${activeTab}`;
+
         const subscription = supabase
-            .channel('public:queries')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'queries' }, (payload) => {
-                // Ideally filter here or just refetch. Refetching for simplicity.
+            .channel(channelName)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'queries',
+                filter: `${roleColumn}=eq.${user.id}`
+            }, (payload) => {
+                // Efficiently refetch only when relevant to current user and tab
                 fetchQueries();
             })
             .subscribe();
