@@ -36,11 +36,19 @@ export default function SellerQueries() {
 
         fetchQueries();
 
-        // Real-time updates
+        // ⚡ Bolt Optimization: Use dynamic channel names to avoid collisions and
+        // database-level postgres_changes filters to prevent inefficient global refetch bottlenecks.
+        const filterField = activeTab === 'received' ? 'farmer_uid' : 'buyer_uid';
+        const channelName = `seller_queries_${activeTab}_${user.id}`;
+
         const subscription = supabase
-            .channel('public:queries')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'queries' }, (payload) => {
-                // Ideally filter here or just refetch. Refetching for simplicity.
+            .channel(channelName)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'queries',
+                filter: `${filterField}=eq.${user.id}`
+            }, (payload) => {
                 fetchQueries();
             })
             .subscribe();
