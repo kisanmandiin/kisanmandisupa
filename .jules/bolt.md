@@ -1,0 +1,3 @@
+## 2024-08-04 - [Derived State Optimization in Marketplace]
+**Learning:** Managing derived state (filtered/sorted items based on search/category) using a `useEffect` to update a secondary `useState` introduces an unavoidable double-render cycle. The first render happens when dependency state changes, and the second render is triggered when the `useEffect` updates the derived state.
+**Action:** Use `useMemo` to synchronously compute derived state during render. This guarantees that UI updates happen in a single render cycle, eliminating jank and reducing React processing time. Additionally, delay cloning arrays until absolutely necessary (e.g., just before a mutating `.sort()`) to reduce memory allocations on every re-render.
