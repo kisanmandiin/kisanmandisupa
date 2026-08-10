@@ -1,0 +1,3 @@
+## 2024-06-12 - Marketplace useEffect Double-Render Anti-Pattern
+**Learning:** Using `useEffect` to synchronize derived state (like `filteredProducts` based on `search` or `category` props/state) forces a double-render cycle. Additionally, blindly spreading arrays (`[...allProducts]`) before applying `.filter()` creates unnecessary memory pressure because `.filter()` inherently returns a new array instance.
+**Action:** When filtering or sorting data based on other state, compute it synchronously during render using `useMemo`. Delay array cloning (`[...array]`) until a mutative method like `.sort()` explicitly requires it (i.e., only if no prior operations like `.filter()` have generated a new array instance).
