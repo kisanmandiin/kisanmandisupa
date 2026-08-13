@@ -1,0 +1,3 @@
+## 2024-08-13 - Optimize Array Processing in React Derived State
+**Learning:** In `BuyerQueries.jsx`, the component derived `filteredQueries` by chaining `.filter()` and `.sort()` unconditionally on every render. Because `.sort()` mutates in place, this also required allocating a new array or parsing `new Date()` multiple times per element (O(N log N) time complexity for parsing). Memoizing this via `useMemo` and sorting date strings directly is crucial to prevent blocking the main thread.
+**Action:** Use `useMemo` whenever a component computes filtered/sorted arrays derived from props or state. Optimize sorting algorithms to use direct string comparison (e.g., ISO 8601 strings) instead of instantiating new `Date` objects repeatedly during comparison.
