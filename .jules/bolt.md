@@ -1,0 +1,3 @@
+## 2024-06-25 - Supabase Realtime Subscription Optimization
+**Learning:** By default, Supabase `postgres_changes` subscriptions on generic channels (`public:tableName`) broadcast every database row change to all connected clients. In a React component listening to these changes, this causes global N+1 re-renders and unnecessary data refetching for events unrelated to the current user.
+**Action:** Always append the user ID to the channel name (e.g., `queries:activeTab:user_id`) to avoid cross-talk, and explicitly define `filter: column=eq.user_id` inside the `postgres_changes` config object so the database only pushes relevant WebSocket payloads.
