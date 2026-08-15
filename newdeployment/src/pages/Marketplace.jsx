@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -12,7 +12,6 @@ export default function Marketplace() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [allProducts, setAllProducts] = useState([]);
-    const [filteredProducts, setFilteredProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // State
@@ -56,7 +55,6 @@ export default function Marketplace() {
                     const { data, timestamp } = JSON.parse(cachedData);
                     if (Date.now() - timestamp < 3600000) {
                         setAllProducts(data);
-                        setFilteredProducts(data);
                         setLoading(false);
                     }
                 } catch (e) {
@@ -104,7 +102,6 @@ export default function Marketplace() {
 
                     // Update State
                     setAllProducts(mergedProducts);
-                    setFilteredProducts(mergedProducts);
 
                     // Update Cache
                     localStorage.setItem('kisan_products_cache', JSON.stringify({
@@ -113,7 +110,6 @@ export default function Marketplace() {
                     }));
                 } else {
                     setAllProducts([]);
-                    setFilteredProducts([]);
                 }
             } catch (err) {
                 console.error("Failed to load products from Supabase", err);
@@ -124,24 +120,38 @@ export default function Marketplace() {
         fetchProducts();
     }, []);
 
-    useEffect(() => {
-        let filtered = [...allProducts];
+    const filteredProducts = useMemo(() => {
+        // Bolt: ⚡ Performance Optimization
+        // 1. Replaced separate useState+useEffect with useMemo for derived state.
+        //    This completely eliminates a double-render cycle when search/category/sort changes.
+        // 2. Delayed array cloning until strictly necessary for .sort() mutation
+        //    to avoid unnecessary memory allocation on every re-render.
+        let result = allProducts;
+
         if (category !== "All Produce") {
-            filtered = filtered.filter(p => p.category === category);
+            result = result.filter(p => p.category === category);
         }
+
         if (search) {
             const lowerSearch = search.toLowerCase();
-            filtered = filtered.filter(p =>
+            result = result.filter(p =>
                 p.name.toLowerCase().includes(lowerSearch) ||
                 (p.description || "").toLowerCase().includes(lowerSearch)
             );
         }
+
         if (sort === 'price_asc') {
-            filtered.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+            // Only clone before sort if not already a new array from filter
+            // filter() returns a new array so we can sort in place.
+            // If no filters were applied, result is allProducts, which we must not mutate.
+            if (result === allProducts) result = [...result];
+            result.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
         } else if (sort === 'price_desc') {
-            filtered.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+            if (result === allProducts) result = [...result];
+            result.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
         }
-        setFilteredProducts(filtered);
+
+        return result;
     }, [search, category, sort, allProducts]);
 
     return (
