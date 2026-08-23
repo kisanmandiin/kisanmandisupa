@@ -1,16 +1,17 @@
 import React from 'react';
 
-export default function ProductCard({ product, onQuery }) {
-    const timeAgo = (timestamp) => {
-        if (!timestamp) return 'Recently';
-        const diff = Date.now() - new Date(timestamp).getTime();
-        const mins = Math.floor(diff / 60000);
-        if (mins < 60) return `${mins}m ago`;
-        const hours = Math.floor(mins / 60);
-        if (hours < 24) return `${hours}h ago`;
-        return `${Math.floor(hours / 24)}d ago`;
-    };
+// ⚡ Bolt: Extracted timeAgo outside component to prevent recreation on every render
+const timeAgo = (timestamp) => {
+    if (!timestamp) return 'Recently';
+    const diff = Date.now() - new Date(timestamp).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+};
 
+export default function ProductCard({ product, onQuery }) {
     const images = product.images || (product.image ? [product.image] : ['/assets/placeholder.jpg']);
 
     return (
