@@ -1,0 +1,3 @@
+## 2024-05-18 - [Derived state useEffect replacement with useMemo]
+**Learning:** Replaced `filteredProducts` state in `Marketplace.jsx` along with its associated `useEffect` with a synchronous `useMemo` block. This prevents an avoidable double-render triggered by managing derived filtering/sorting logic as reactive state in React. Array mutations like `sort()` must still be guarded by selective array cloning `[...array]` immediately before the sort operation.
+**Action:** Always compute derived state synchronously during render using variables or `useMemo` (if computationally expensive or avoiding reference changes), rather than `useState` + `useEffect`.
