@@ -1,0 +1,3 @@
+## 2024-10-18 - [Optimize Marketplace Search/Filter]
+**Learning:** Derived state based on filtering and sorting in large list components like `Marketplace` shouldn't be managed with a separate `useState` updated via a `useEffect`. This pattern forces a double-render cycle (one for the dependency change, one for the state update) which significantly impacts performance when dealing with large arrays.
+**Action:** Use `useMemo` to compute derived state synchronously during render. Furthermore, only clone arrays (`[...array]`) if a mutating method (like `.sort()`) is called and no prior filtering operation (which returns a new array) has already occurred.
