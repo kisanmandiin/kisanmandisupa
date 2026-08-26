@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -12,8 +12,7 @@ export default function Marketplace() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [allProducts, setAllProducts] = useState([]);
-    const [filteredProducts, setFilteredProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
+        const [loading, setLoading] = useState(true);
 
     // State
     const [visibleCount, setVisibleCount] = useState(8);
@@ -56,8 +55,7 @@ export default function Marketplace() {
                     const { data, timestamp } = JSON.parse(cachedData);
                     if (Date.now() - timestamp < 3600000) {
                         setAllProducts(data);
-                        setFilteredProducts(data);
-                        setLoading(false);
+                                                setLoading(false);
                     }
                 } catch (e) {
                     console.error("Cache parse error", e);
@@ -104,7 +102,6 @@ export default function Marketplace() {
 
                     // Update State
                     setAllProducts(mergedProducts);
-                    setFilteredProducts(mergedProducts);
 
                     // Update Cache
                     localStorage.setItem('kisan_products_cache', JSON.stringify({
@@ -113,8 +110,7 @@ export default function Marketplace() {
                     }));
                 } else {
                     setAllProducts([]);
-                    setFilteredProducts([]);
-                }
+                                    }
             } catch (err) {
                 console.error("Failed to load products from Supabase", err);
             } finally {
@@ -124,24 +120,39 @@ export default function Marketplace() {
         fetchProducts();
     }, []);
 
-    useEffect(() => {
-        let filtered = [...allProducts];
+    // ⚡ Bolt Performance Optimization:
+    // Synchronous derived state using useMemo to eliminate double-render cycles.
+    // Delays array clone ([...]) until actually needed by a mutative operation (.sort).
+    const filteredProducts = useMemo(() => {
+        let isClonedOrNew = false;
+        let filtered = allProducts;
+
         if (category !== "All Produce") {
             filtered = filtered.filter(p => p.category === category);
+            isClonedOrNew = true; // .filter returns a new array
         }
+
         if (search) {
             const lowerSearch = search.toLowerCase();
             filtered = filtered.filter(p =>
                 p.name.toLowerCase().includes(lowerSearch) ||
                 (p.description || "").toLowerCase().includes(lowerSearch)
             );
+            isClonedOrNew = true;
         }
-        if (sort === 'price_asc') {
-            filtered.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
-        } else if (sort === 'price_desc') {
-            filtered.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+
+        if (sort === 'price_asc' || sort === 'price_desc') {
+            // Clone if not already filtered to avoid mutating allProducts
+            if (!isClonedOrNew) {
+                filtered = [...filtered];
+            }
+            if (sort === 'price_asc') {
+                filtered.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+            } else if (sort === 'price_desc') {
+                filtered.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+            }
         }
-        setFilteredProducts(filtered);
+        return filtered;
     }, [search, category, sort, allProducts]);
 
     return (
