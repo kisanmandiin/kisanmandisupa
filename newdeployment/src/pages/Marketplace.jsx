@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -12,7 +12,6 @@ export default function Marketplace() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [allProducts, setAllProducts] = useState([]);
-    const [filteredProducts, setFilteredProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // State
@@ -56,8 +55,7 @@ export default function Marketplace() {
                     const { data, timestamp } = JSON.parse(cachedData);
                     if (Date.now() - timestamp < 3600000) {
                         setAllProducts(data);
-                        setFilteredProducts(data);
-                        setLoading(false);
+                            setLoading(false);
                     }
                 } catch (e) {
                     console.error("Cache parse error", e);
@@ -104,7 +102,6 @@ export default function Marketplace() {
 
                     // Update State
                     setAllProducts(mergedProducts);
-                    setFilteredProducts(mergedProducts);
 
                     // Update Cache
                     localStorage.setItem('kisan_products_cache', JSON.stringify({
@@ -113,7 +110,6 @@ export default function Marketplace() {
                     }));
                 } else {
                     setAllProducts([]);
-                    setFilteredProducts([]);
                 }
             } catch (err) {
                 console.error("Failed to load products from Supabase", err);
@@ -124,24 +120,38 @@ export default function Marketplace() {
         fetchProducts();
     }, []);
 
-    useEffect(() => {
-        let filtered = [...allProducts];
+    // ⚡ Bolt: Use useMemo for derived state to avoid double-renders from useEffect
+    // ⚡ Bolt: Delayed array cloning avoids unnecessary memory allocations during re-renders
+    const filteredProducts = useMemo(() => {
+        let filtered = allProducts;
+        let needsClone = true;
+
         if (category !== "All Produce") {
             filtered = filtered.filter(p => p.category === category);
+            needsClone = false;
         }
+
         if (search) {
             const lowerSearch = search.toLowerCase();
             filtered = filtered.filter(p =>
                 p.name.toLowerCase().includes(lowerSearch) ||
                 (p.description || "").toLowerCase().includes(lowerSearch)
             );
+            needsClone = false;
         }
-        if (sort === 'price_asc') {
-            filtered.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
-        } else if (sort === 'price_desc') {
-            filtered.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+
+        if (sort === 'price_asc' || sort === 'price_desc') {
+            if (needsClone) {
+                filtered = [...filtered];
+            }
+            if (sort === 'price_asc') {
+                filtered.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+            } else if (sort === 'price_desc') {
+                filtered.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+            }
         }
-        setFilteredProducts(filtered);
+
+        return filtered;
     }, [search, category, sort, allProducts]);
 
     return (
