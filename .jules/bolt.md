@@ -1,0 +1,3 @@
+## 2024-05-24 - React Component Sorting Optimization
+**Learning:** Parsing `new Date()` inside an Array `.sort()` comparator function for large lists causes significant O(N log N) performance degradation because date string parsing in JS is expensive. Furthermore, unconditionally spreading state arrays (`[...queries]`) for derived state calculation causes unnecessary memory allocations on every render.
+**Action:** Always wrap expensive derived state (filtering/sorting) in `useMemo`. Use direct ISO 8601 string comparison (`a < b`) for chronological sorting instead of parsing Date objects, and conditionally clone arrays only if not immediately returning a newly allocated array from methods like `.filter()`.
