@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 
@@ -63,9 +63,25 @@ export default function BuyerQueries() {
         }
     };
 
-    const filteredQueries = queries
-        .filter(q => filterStatus === 'all' || (q.status || 'pending') === filterStatus)
-        .sort((a, b) => sortDate === 'newest' ? new Date(b.created_at) - new Date(a.created_at) : new Date(a.created_at) - new Date(b.created_at));
+    // ⚡ Bolt: Optimize sorting by removing expensive Date parsing and using useMemo to prevent re-calculations on every render
+    const filteredQueries = useMemo(() => {
+        const filtered = filterStatus === 'all'
+            ? queries
+            : queries.filter(q => (q.status || 'pending') === filterStatus);
+
+        if (filtered.length === 0) return filtered;
+
+        // Clone array only once before sorting
+        const sorted = filtered === queries ? [...filtered] : filtered;
+
+        return sorted.sort((a, b) => {
+            if (a.created_at === b.created_at) return 0;
+            if (sortDate === 'newest') {
+                return a.created_at < b.created_at ? 1 : -1;
+            }
+            return a.created_at > b.created_at ? 1 : -1;
+        });
+    }, [queries, filterStatus, sortDate]);
 
     return (
         <div className="dashboard-section animate-in fade-in slide-in-from-bottom-4 duration-500">
