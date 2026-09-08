@@ -37,10 +37,12 @@ export default function SellerQueries() {
         fetchQueries();
 
         // Real-time updates
+        // ⚡ Bolt: Using database-level filtering and active-tab-specific channels
+        // instead of listening to all 'queries' updates globally.
+        const filterStr = activeTab === 'received' ? `farmer_uid=eq.${user.id}` : `buyer_uid=eq.${user.id}`;
         const subscription = supabase
-            .channel('public:queries')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'queries' }, (payload) => {
-                // Ideally filter here or just refetch. Refetching for simplicity.
+            .channel(`public:queries:${user.id}:${activeTab}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'queries', filter: filterStr }, (payload) => {
                 fetchQueries();
             })
             .subscribe();
