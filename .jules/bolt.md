@@ -1,0 +1,3 @@
+## 2024-05-18 - Supabase Real-time Global Event Bottleneck
+**Learning:** By default, Supabase real-time channels listening to `public:table` without filters broadcast all events to every connected client. In components like `SellerQueries`, this triggers an O(N^2) storm of refetches (`fetchQueries()`) across the active user base whenever any query is updated globally.
+**Action:** Always use database-level `postgres_changes` filters (e.g., `filter: 'column=eq.value'`) and unique, scoped channel names (e.g., `table_context_uid`) for user-specific real-time subscriptions to prevent massive unnecessary client-side processing and DB hammering.
