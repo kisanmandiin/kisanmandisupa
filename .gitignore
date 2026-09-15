@@ -1,0 +1,4 @@
+newdeployment/node_modules/
+newdeployment/dist/
+.env
+newdeployment/.env
