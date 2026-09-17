@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -12,7 +12,6 @@ export default function Marketplace() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [allProducts, setAllProducts] = useState([]);
-    const [filteredProducts, setFilteredProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // State
@@ -56,7 +55,6 @@ export default function Marketplace() {
                     const { data, timestamp } = JSON.parse(cachedData);
                     if (Date.now() - timestamp < 3600000) {
                         setAllProducts(data);
-                        setFilteredProducts(data);
                         setLoading(false);
                     }
                 } catch (e) {
@@ -104,7 +102,6 @@ export default function Marketplace() {
 
                     // Update State
                     setAllProducts(mergedProducts);
-                    setFilteredProducts(mergedProducts);
 
                     // Update Cache
                     localStorage.setItem('kisan_products_cache', JSON.stringify({
@@ -113,7 +110,6 @@ export default function Marketplace() {
                     }));
                 } else {
                     setAllProducts([]);
-                    setFilteredProducts([]);
                 }
             } catch (err) {
                 console.error("Failed to load products from Supabase", err);
@@ -124,24 +120,44 @@ export default function Marketplace() {
         fetchProducts();
     }, []);
 
-    useEffect(() => {
-        let filtered = [...allProducts];
-        if (category !== "All Produce") {
-            filtered = filtered.filter(p => p.category === category);
+    // PERFORMANCE OPTIMIZATION: Memoize filtered and sorted products
+    // This eliminates a double-render cycle that previously occurred by storing derived state in a useEffect
+    // It also avoids unnecessary array cloning by chaining mutations only when needed.
+    const filteredProducts = useMemo(() => {
+        let filtered = allProducts;
+
+        const needsFiltering = category !== "All Produce" || search;
+
+        if (needsFiltering) {
+             filtered = allProducts.filter(p => {
+                 let matchCategory = true;
+                 if (category !== "All Produce") {
+                     matchCategory = p.category === category;
+                 }
+
+                 let matchSearch = true;
+                 if (search) {
+                     const lowerSearch = search.toLowerCase();
+                     matchSearch = p.name.toLowerCase().includes(lowerSearch) ||
+                                   (p.description || "").toLowerCase().includes(lowerSearch);
+                 }
+                 return matchCategory && matchSearch;
+             });
         }
-        if (search) {
-            const lowerSearch = search.toLowerCase();
-            filtered = filtered.filter(p =>
-                p.name.toLowerCase().includes(lowerSearch) ||
-                (p.description || "").toLowerCase().includes(lowerSearch)
-            );
+
+        if (sort === 'price_asc' || sort === 'price_desc') {
+            // Only clone if we haven't already filtered to avoid mutating the original allProducts array
+            if (!needsFiltering) {
+                filtered = [...filtered];
+            }
+            if (sort === 'price_asc') {
+                filtered.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+            } else if (sort === 'price_desc') {
+                filtered.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+            }
         }
-        if (sort === 'price_asc') {
-            filtered.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
-        } else if (sort === 'price_desc') {
-            filtered.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
-        }
-        setFilteredProducts(filtered);
+
+        return filtered;
     }, [search, category, sort, allProducts]);
 
     return (
