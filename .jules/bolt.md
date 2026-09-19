@@ -1,0 +1,3 @@
+## 2024-11-20 - React Synchronous Derived State
+**Learning:** In React functional components, deriving filtered or sorted state from API data inside a `useEffect` and updating a separate `useState` variable creates an unavoidable double-render cycle that hurts main-thread performance, especially with large lists.
+**Action:** Always compute derived state synchronously during render using `useMemo`. When filtering and sorting arrays, ensure the `needsClone` logic avoids unnecessary object allocations by checking if `.filter()` has already returned a new instance before performing a destructive `.sort()`.
