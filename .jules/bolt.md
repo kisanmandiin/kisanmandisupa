@@ -1,0 +1,3 @@
+## 2024-05-24 - React Derived State Pattern
+**Learning:** The application was syncing `allProducts` to a `filteredProducts` state via a `useEffect` hook. This is a common anti-pattern in React that causes a double-render lifecycle (first render for `allProducts`, second render when the effect updates `filteredProducts`). It also incurs the overhead of maintaining duplicate state in memory.
+**Action:** Replace derived state variables with synchronous `useMemo` hooks. Ensure that expensive array methods like `sort()` are safely executed either on newly filtered array instances or by conditionally cloning the original array `[...allProducts]` when no filters apply.
