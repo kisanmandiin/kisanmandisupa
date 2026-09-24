@@ -1,0 +1,6 @@
+⚡ Bolt: [performance improvement]
+
+💡 What: Replaced `useState`/`useEffect` combination with `useMemo` for computing `filteredProducts` in `Marketplace.jsx`. Added missing items to `.gitignore`.
+🎯 Why: Deriving state inside a `useEffect` and updating a separate state variable triggers an unavoidable double-render in React (one for dependency change, one for state update).
+📊 Impact: Completely eliminates the secondary re-render cycle whenever products, search query, sorting, or categories change, noticeably improving client-side UI responsiveness.
+🔬 Measurement: Use React Developer Tools Profiler to observe component renders when typing in the search bar or changing filters.
