@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -12,7 +12,6 @@ export default function Marketplace() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [allProducts, setAllProducts] = useState([]);
-    const [filteredProducts, setFilteredProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // State
@@ -56,7 +55,6 @@ export default function Marketplace() {
                     const { data, timestamp } = JSON.parse(cachedData);
                     if (Date.now() - timestamp < 3600000) {
                         setAllProducts(data);
-                        setFilteredProducts(data);
                         setLoading(false);
                     }
                 } catch (e) {
@@ -104,7 +102,6 @@ export default function Marketplace() {
 
                     // Update State
                     setAllProducts(mergedProducts);
-                    setFilteredProducts(mergedProducts);
 
                     // Update Cache
                     localStorage.setItem('kisan_products_cache', JSON.stringify({
@@ -113,7 +110,6 @@ export default function Marketplace() {
                     }));
                 } else {
                     setAllProducts([]);
-                    setFilteredProducts([]);
                 }
             } catch (err) {
                 console.error("Failed to load products from Supabase", err);
@@ -124,11 +120,17 @@ export default function Marketplace() {
         fetchProducts();
     }, []);
 
-    useEffect(() => {
-        let filtered = [...allProducts];
+    // Bolt Performance Optimization:
+    // Synchronously compute derived state to avoid a double-render cycle.
+    // This removes the need for an additional useState for filteredProducts
+    // and eliminates the use of useEffect solely for mapping state to state.
+    const filteredProducts = useMemo(() => {
+        let filtered = allProducts;
+
         if (category !== "All Produce") {
             filtered = filtered.filter(p => p.category === category);
         }
+
         if (search) {
             const lowerSearch = search.toLowerCase();
             filtered = filtered.filter(p =>
@@ -136,12 +138,22 @@ export default function Marketplace() {
                 (p.description || "").toLowerCase().includes(lowerSearch)
             );
         }
+
         if (sort === 'price_asc') {
+            // Clone only if we haven't already created a new array from filter
+            if (filtered === allProducts) {
+                filtered = [...filtered];
+            }
             filtered.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
         } else if (sort === 'price_desc') {
+            // Clone only if we haven't already created a new array from filter
+            if (filtered === allProducts) {
+                filtered = [...filtered];
+            }
             filtered.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
         }
-        setFilteredProducts(filtered);
+
+        return filtered;
     }, [search, category, sort, allProducts]);
 
     return (
