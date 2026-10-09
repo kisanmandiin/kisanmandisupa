@@ -1,0 +1,3 @@
+## 2026-10-09 - [React Anti-Pattern: Derived State via useEffect]
+**Learning:** [The `Marketplace.jsx` component suffered from an unavoidable double-render cycle because derived state (`filteredProducts`) was maintained in a separate `useState` that updated via a `useEffect` hook reacting to filter parameter changes. This is a classic React anti-pattern that bloats render times and memory usage.]
+**Action:** [When managing derived state in React based on URL params or other props, always compute it synchronously during render using `useMemo`. To prevent unnecessary memory allocations during these re-renders, avoid redundant spread operators (e.g., `[...filtered].sort()`) if preceding mutative methods like `.filter()` have already generated a cloned array.]
