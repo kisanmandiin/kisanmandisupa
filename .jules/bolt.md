@@ -1,0 +1,3 @@
+## 2026-10-16 - [React Derived State Double-Render Bottleneck]
+**Learning:** The application stores derived state (`filteredProducts`) in a separate `useState` that gets updated via a `useEffect` reacting to changes in `search`, `category`, `sort`, and `allProducts`. This creates a classic double-render bottleneck, where React first renders the old derived state and then schedules an immediate re-render for the new filtered state.
+**Action:** Use `useMemo` to synchronously compute derived state during render. This directly applies to `newdeployment/src/pages/Marketplace.jsx` to eliminate a render cycle for all filtering and sorting operations.
