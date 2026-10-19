@@ -31,9 +31,9 @@ export default function BuyerQueries() {
 
         fetchQueries();
 
-        // Real-time subscription (Optional, but good for UX)
+        // ⚡ Bolt Optimization: Use dynamic channel name to avoid collisions
         const subscription = supabase
-            .channel('public:queries')
+            .channel(`queries_buyer_${user.id}`)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'queries', filter: `buyer_uid=eq.${user.id}` }, (payload) => {
                 fetchQueries();
             })

@@ -1,0 +1,3 @@
+## 2026-10-19 - Supabase Realtime Global Broadcast Storm
+**Learning:** Subscribing to Supabase `postgres_changes` with a generic channel name and no filters (e.g., `table: 'queries'`) causes a broadcast storm where every single client connected to the app wakes up and runs an N+1 refetch anytime ANY user makes a change to that table. This creates a massive, unnecessary global bottleneck on the database.
+**Action:** Always enforce dynamic, user-specific channel names (e.g., `queries_buyer_${user.id}`) and strict database-level `filter` string parameters (`filter: buyer_uid=eq.${user.id}`) when setting up Realtime subscriptions to ensure clients only process events meant for them.
