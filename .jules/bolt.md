@@ -1,0 +1,3 @@
+## 2026-10-30 - Supabase Realtime Global Refetch Bottleneck
+**Learning:** By default, Supabase `postgres_changes` listens to all events on a table across the entire application if a filter is not provided. In `SellerQueries.jsx`, this caused a global refetch bottleneck where any query made by any user would trigger a refetch for all connected users because they were all subscribed to `public:queries`.
+**Action:** Always apply database-level filters (e.g., `filter: farmer_uid=eq.[user.id]`) and use dynamic channel names based on the user context when subscribing to real-time updates to prevent cross-user event collisions and inefficient client-side refetching.
